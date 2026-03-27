@@ -1,0 +1,19 @@
+# History files
+.Rhistory
+.Rapp.history
+.RData
+*workspace*
+
+# Mac OS files
+.DS_Store
+
+# Data files (To prevent large file uploads)
+*.rds
+*.RDS
+*.csv
+*.xlsx
+*.txt
+
+# Exclude generated document files (Remove this if you want to upload the .docx summary)
+*.docx
+*.pdf
