@@ -48,9 +48,9 @@ set.seed(1234)
 #   - GSE142455 : Mixed background (C57BL/6 + FVB), male, 6-7 weeks, KIC model
 
 DATA_DIR <- "path/to/your/data"  # Change this to your data directory
-TXNAME_PATH <- file.path("/Users/daehwankim/Desktop/Desktop_MacBook Air/sequencing data/Bulk_seq_practice/TXNAME")
-SYMBOL_PATH <- file.path("/Users/daehwankim/Desktop/Desktop_MacBook Air/sequencing data/Bulk_seq_practice/SYMBOL")
-KALLISTO_DIR <- file.path("/Users/daehwankim/Desktop/Seqencing_Practicing/Bulk_seq_analysis_practice/kallisto")
+TXNAME_PATH <- file.path("")
+SYMBOL_PATH <- file.path("")
+KALLISTO_DIR <- file.path("")
 OUTPUT_DIR <- file.path(DATA_DIR, "results")
 
 # Create output directory if not exists
@@ -86,9 +86,6 @@ coding_genes <- gene_info %>%
 tx2gene_coding <- tx2gene %>%
   filter(SYMBOL %in% coding_genes)
 
-cat("Transcripts before filtering:", nrow(tx2gene), "\n")
-cat("Transcripts after filtering (protein-coding only):", nrow(tx2gene_coding), "\n")
-
 # ----------------------------------------------------------------------------
 # 4. Define Sample Information
 # ----------------------------------------------------------------------------
@@ -110,7 +107,7 @@ sample_names <- c(
 )
 
 # Define file paths
-files <- file.path("/Users/daehwankim/Desktop/Desktop_MacBook Air/sequencing data/Integrated data", sample_names)
+files <- file.path("", sample_names)
 names(files) <- sample_names
 
 # Define batch information for batch effect correction
@@ -144,7 +141,7 @@ rownames(sampleTable) <- colnames(txi.kallisto$counts)
 # ----------------------------------------------------------------------------
 # 6. Extract TPM values for Target Genes
 # ----------------------------------------------------------------------------
-target_genes <- c("Trim63", "Fbxo32", "Eda2r")
+target_genes <- c("Fbxo32", "Eda2r")
 
 # Abundance matrix contains TPM values (from tximport of kallisto quantifiers)
 tpm_mat <- txi.kallisto$abundance
@@ -212,24 +209,3 @@ tpm_plot <- ggplot(summary_df, aes(x = condition, y = mean_TPM, fill = condition
     panel.grid.major.x = element_blank()
   )
 
-view(tpm_df)
-write.xlsx(tpm_df, "/Users/daehwankim/Desktop/KIST_folder/2025/Progress/Cachexia model/Serpina3_Paper/Nature communications/tpm.xlsx")
-
-# ----------------------------------------------------------------------------
-# 8. Save Plot and Session Info
-# ----------------------------------------------------------------------------
-print(tpm_plot)
-
-# Define Figure Output Directory
-FIGURE_DIR <- "/Users/daehwankim/Desktop/KIST_folder/2025/Progress/Cachexia model/Serpina3_Paper/Nature communications/Figureset_natcom"
-if (!dir.exists(FIGURE_DIR)) dir.create(FIGURE_DIR, recursive = TRUE)
-
-# Save PDF
-ggsave(file.path(FIGURE_DIR, "Figure1_TargetGenes_TPM_Barplot.pdf"), tpm_plot, width = 8, height = 4)
-# Save PNG
-ggsave(file.path(FIGURE_DIR, "Figure1_TargetGenes_TPM_Barplot.png"), tpm_plot, width = 8, height = 4, dpi = 300)
-
-cat("\n============================================\n")
-cat("TPM Barplot generation completed!\n")
-cat("Output files saved to:", OUTPUT_DIR, "\n")
-cat("============================================\n")
