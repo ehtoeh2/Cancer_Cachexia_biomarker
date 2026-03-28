@@ -7,7 +7,7 @@
 
 ## Overview
 
-This repository contains the R analysis scripts used to generate the figures presented in the above manuscript. The study employs an integrative multi-omics approach—encompassing bulk RNA-seq, single-nucleus RNA-seq (snRNA-seq), and LC-MS/MS proteomics—across multiple independent cancer cachexia mouse models and a human patient cohort, to identify and validate SERPINA3 as a circulating biomarker for cancer cachexia.
+This repository contains the R analysis scripts used to generate the figures presented in the above manuscript. The study employs an integrative multi-omics approach—encompassing bulk RNA-seq, single-nucleus RNA-seq (snRNA-seq), and LC-MS/MS proteomics—across multiple independent cancer cachexia mouse models and a human patient cohort, to identify and validate circulating biomarkers for cancer cachexia.
 
 ---
 
