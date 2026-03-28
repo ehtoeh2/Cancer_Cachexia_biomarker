@@ -58,22 +58,20 @@ options(future.globals.maxSize = 1e15) # allow large objects for SCTransform
 #   - GSE272085 (JCSM study)      : Con_filtered_feature_bc_matrix / cac_filtered_feature_bc_matrix
 #   - Zenodo.11090497 (KIC model) : ctrl_feature_bc_matrix / ccx_feature_bc_matrix
 
-DATA_DIR <- "/Users/daehwankim/Desktop/Seqencing_Practicing/Single seq analysis practice/Single Cell Cachexia(통합)"
-OUTPUT_DIR <- "/Users/daehwankim/Desktop/KIST_folder/Progress/Cachexia model/Serpina3_Paper/260119"
+DATA_DIR <- ""
+OUTPUT_DIR <- ""
 
 # Paths for pre-processed secretome gene list
-ALLGC_PATH <- file.path(OUTPUT_DIR, "allGC_secretion[260119].xlsx")
+ALLGC_PATH <- file.path(OUTPUT_DIR, "")
 
-# Create output directory if needed
-if (!dir.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR, recursive = TRUE)
 
 # ----------------------------------------------------------------------------
 # 2. Load Raw 10X Data
 # ----------------------------------------------------------------------------
 control.data1 <- Read10X(data.dir = file.path(DATA_DIR, "JCSM/Con_filtered_feature_bc_matrix"))
-control.data2 <- Read10X(data.dir = file.path(DATA_DIR, "Cell reports (Myod)/ctrl_feature_bc_matrix"))
+control.data2 <- Read10X(data.dir = file.path(DATA_DIR, "Cell reports/ctrl_feature_bc_matrix"))
 cachexia.data1 <- Read10X(data.dir = file.path(DATA_DIR, "JCSM/cac_filtered_feature_bc_matrix"))
-cachexia.data2 <- Read10X(data.dir = file.path(DATA_DIR, "Cell reports (Myod)/ccx_feature_bc_matrix"))
+cachexia.data2 <- Read10X(data.dir = file.path(DATA_DIR, "Cell reports/ccx_feature_bc_matrix"))
 
 # ----------------------------------------------------------------------------
 # 3. Create Seurat Objects
@@ -83,11 +81,6 @@ Control2 <- CreateSeuratObject(control.data2, project = "Control")
 Cachexia1 <- CreateSeuratObject(cachexia.data1, project = "Cachexia")
 Cachexia2 <- CreateSeuratObject(cachexia.data2, project = "Cachexia")
 
-cat("Initial cell counts:\n")
-cat("  Control1  :", ncol(Control1), "\n")
-cat("  Control2  :", ncol(Control2), "\n")
-cat("  Cachexia1 :", ncol(Cachexia1), "\n")
-cat("  Cachexia2 :", ncol(Cachexia2), "\n")
 
 # ----------------------------------------------------------------------------
 # 4. QC: Compute Mitochondrial & Ribosomal Percentages
@@ -119,11 +112,6 @@ seurat_list <- lapply(seurat_list, function(obj) {
   )
 })
 
-cat("\nCell counts after QC filtering:\n")
-cat("  Control1  :", ncol(seurat_list[[1]]), "\n")
-cat("  Control2  :", ncol(seurat_list[[2]]), "\n")
-cat("  Cachexia1 :", ncol(seurat_list[[3]]), "\n")
-cat("  Cachexia2 :", ncol(seurat_list[[4]]), "\n")
 
 # ----------------------------------------------------------------------------
 # 6. Doublet Removal with scDblFinder
@@ -139,12 +127,6 @@ run_scDbl <- function(sobj, dbr = NULL, seed = 1234) {
 }
 
 seurat_list <- lapply(seurat_list, run_scDbl)
-
-cat("\nCell counts after doublet removal:\n")
-cat("  Control1  :", ncol(seurat_list[[1]]), "\n")
-cat("  Control2  :", ncol(seurat_list[[2]]), "\n")
-cat("  Cachexia1 :", ncol(seurat_list[[3]]), "\n")
-cat("  Cachexia2 :", ncol(seurat_list[[4]]), "\n")
 
 # ----------------------------------------------------------------------------
 # 7. Merge Samples into One Seurat Object
@@ -226,10 +208,6 @@ combined_marker_genes <- FindAllMarkers(
   logfc.threshold = 1
 )
 
-write.xlsx(
-  combined_marker_genes,
-  file.path(OUTPUT_DIR, "cluster_allmarker.xlsx")
-)
 
 # ----------------------------------------------------------------------------
 # 11. Cell Type Annotation
@@ -278,7 +256,6 @@ Annotation <- c(
 )
 
 combined$Annotation <- unname(Annotation[as.character(Idents(combined))])
-cat("Unannotated cells:", sum(is.na(combined$Annotation)), "\n")
 
 # Set display order and convert to factor
 cell_type_order <- c(
@@ -290,22 +267,7 @@ combined$Annotation <- factor(combined$Annotation, levels = cell_type_order)
 # Switch active identity
 Idents(combined) <- "Annotation"
 
-# Save annotated object
-saveRDS(combined, file.path(OUTPUT_DIR, "combined.rds"))
-# combined <- readRDS(file.path(OUTPUT_DIR, "combined.rds"))
 
-# Shared color palette for all figures
-my_colors <- c(
-  "IIb"         = "#3B6E91",
-  "IIa/IIx"     = "#8AB6D6",
-  "FAPs"        = "#6FA07F",
-  "MuSCs"       = "#E6C229",
-  "Endothelial" = "#C97586",
-  "Pericyte"    = "#D1A6A8",
-  "NMJ"         = "#8F80BA",
-  "Macrophage"  = "#D98C5F",
-  "MTJ"         = "#8894A8"
-)
 
 # ----------------------------------------------------------------------------
 # 12. Figure 2A: UMAP (annotated, colored by cell type)
@@ -326,8 +288,6 @@ fig2A <- DimPlot(
   ) +
   labs(x = "UMAP 1", y = "UMAP 2")
 
-print(fig2A)
-ggsave(file.path(OUTPUT_DIR, "Figure2A_UMAP.pdf"), fig2A, width = 7, height = 5)
 
 # ----------------------------------------------------------------------------
 # 13. Figure 2B: Stacked Bar Plot (cell type proportions per condition)
@@ -368,8 +328,6 @@ fig2B <- ggplot(prop_df, aes(x = group, y = frac, fill = cluster)) +
     plot.margin = margin(10, 10, 10, 10)
   )
 
-print(fig2B)
-ggsave(file.path(OUTPUT_DIR, "Figure2B_CellProportion.pdf"), fig2B, width = 4, height = 6)
 
 # ----------------------------------------------------------------------------
 # 14. Figure 2C: Heatmap (secretome DEGs in IIb / IIa/IIx / FAPs)
@@ -397,10 +355,6 @@ markers_sub3 <- FindMarkers(
 markers_sub3_sig <- markers_sub3[markers_sub3$p_val_adj < 0.05, ]
 markers_sub3_sig$genes <- rownames(markers_sub3_sig)
 
-cat(
-  "\nUpregulated DEGs (Cachexia vs. Control) in IIb/IIa/IIx/FAPs:",
-  nrow(markers_sub3_sig), "\n"
-)
 
 # -- 14-3. Intersect with secretome candidate list
 allGC <- read.xlsx(ALLGC_PATH)
@@ -416,8 +370,6 @@ GC3_genes <- intersect(
 )
 all_genes <- unique(c(GC2_genes, GC3_genes))
 
-cat("Secretome candidate genes (GC2):", length(GC2_genes), "\n")
-cat("Secretome candidate genes (GC3):", length(GC3_genes), "\n")
 
 # -- 14-4. Compute average expression per group_id
 avg_exp <- AverageExpression(
@@ -486,9 +438,6 @@ ht_fig2C <- Heatmap(
   column_names_gp  = gpar(fontsize = 10, fontface = "bold")
 )
 
-pdf(file.path(OUTPUT_DIR, "Figure2C_Heatmap.pdf"), width = 8, height = 10)
-draw(ht_fig2C)
-dev.off()
 
 # ----------------------------------------------------------------------------
 # 15. Figure 2D: Dot Plot (Serpina3n, Lox, Ctsl across cell types)
@@ -504,8 +453,6 @@ fig2D <- DotPlot(
   RotatedAxis() +
   theme(axis.title = element_blank())
 
-print(fig2D)
-ggsave(file.path(OUTPUT_DIR, "Figure2D_DotPlot.pdf"), fig2D, width = 5, height = 4)
 
 # ----------------------------------------------------------------------------
 # 16. Figure 2E: Feature Plot (Tnfrsf12a, split by condition)
@@ -522,21 +469,4 @@ fig2E <- FeaturePlot(
   cols         = c("grey90", "#d7301f")
 )
 
-print(fig2E)
-ggsave(file.path(OUTPUT_DIR, "Figure2E_FeaturePlot_Tnfrsf12a.pdf"), fig2E,
-  width = 10, height = 5
-)
 
-# ----------------------------------------------------------------------------
-# 17. Save Session Info
-# ----------------------------------------------------------------------------
-saveRDS(combined, file.path(OUTPUT_DIR, "combined_final.rds"))
-writeLines(
-  capture.output(sessionInfo()),
-  file.path(OUTPUT_DIR, "session_info_Figure2.txt")
-)
-
-cat("\n============================================\n")
-cat("Figure 2 analysis completed!\n")
-cat("Output files saved to:", OUTPUT_DIR, "\n")
-cat("============================================\n")
