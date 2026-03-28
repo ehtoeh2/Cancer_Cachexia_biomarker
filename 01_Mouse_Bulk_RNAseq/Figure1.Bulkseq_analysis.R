@@ -48,9 +48,9 @@ set.seed(1234)
 #   - GSE142455 : Mixed background (C57BL/6 + FVB), male, 6-7 weeks, KIC model
 
 DATA_DIR <- "path/to/your/data"  # Change this to your data directory
-TXNAME_PATH <- file.path("/Users/daehwankim/Desktop/Desktop_MacBook Air/sequencing data/Bulk_seq_practice/TXNAME")
-SYMBOL_PATH <- file.path("/Users/daehwankim/Desktop/Desktop_MacBook Air/sequencing data/Bulk_seq_practice/SYMBOL")
-KALLISTO_DIR <- file.path("/Users/daehwankim/Desktop/Seqencing_Practicing/Bulk_seq_analysis_practice/kallisto")
+TXNAME_PATH <- file.path("")
+SYMBOL_PATH <- file.path("")
+KALLISTO_DIR <- file.path("")
 OUTPUT_DIR <- file.path(DATA_DIR, "results")
 
 # Create output directory if not exists
@@ -86,9 +86,6 @@ coding_genes <- gene_info %>%
 tx2gene_coding <- tx2gene %>%
   filter(SYMBOL %in% coding_genes)
 
-cat("Transcripts before filtering:", nrow(tx2gene), "\n")
-cat("Transcripts after filtering (protein-coding only):", nrow(tx2gene_coding), "\n")
-
 # ----------------------------------------------------------------------------
 # 4. Define Sample Information
 # ----------------------------------------------------------------------------
@@ -110,7 +107,7 @@ sample_names <- c(
 )
 
 # Define file paths
-files <- file.path("/Users/daehwankim/Desktop/Desktop_MacBook Air/sequencing data/Integrated data", sample_names)
+files <- file.path("", sample_names)
 names(files) <- sample_names
 
 # Define batch information for batch effect correction
@@ -157,8 +154,6 @@ smallestGroupSize <- 19
 keep <- rowSums(counts(dds_batch) >= 10) >= smallestGroupSize
 dds_batch <- dds_batch[keep, ]
 
-cat("Genes before filtering:", nrow(txi.kallisto$counts), "\n")
-cat("Genes after filtering:", nrow(dds_batch), "\n")
 
 # Set Control as reference level
 dds_batch$condition <- relevel(dds_batch$condition, ref = "Control")
@@ -170,9 +165,6 @@ deseq2.res <- deseq2.res[order(rownames(deseq2.res)), ]
 
 # Convert to data frame
 res_df <- data.frame(deseq2.res)
-
-# Save DESeq2 results
-write.xlsx(res_df, file.path("/Users/daehwankim/Desktop/KIST_folder/Progress/Cachexia model/Serpina3_Paper/260119/DESeq2_results.xlsx"), rowNames = TRUE)
 
 
 # ----------------------------------------------------------------------------
@@ -230,12 +222,6 @@ pca_plot <- ggplot(pcaData, aes(x = PC1, y = PC2, color = condition, fill = cond
   ) +
   coord_cartesian(xlim = c(-60, 100), ylim = c(-35, 35))
 
-pca_plot <- pca_plot +
-  theme(legend.position = "none")
-
-print(pca_plot)
-ggsave(file.path(OUTPUT_DIR, "Figure1B_PCA.pdf"), pca_plot, width = 8, height = 6)
-
 # ----------------------------------------------------------------------------
 # 8. Figure 1C: Volcano Plot
 # ----------------------------------------------------------------------------
@@ -249,14 +235,6 @@ plot_data <- res_df %>%
     log2FoldChange <= -1 & padj < 0.05 ~ "Downregulated",
     TRUE ~ "Non significant"
   ))
-
-
-
-table(plot_data$gene)
-
-# Count DEGs
-cat("\nDEG counts:\n")
-print(table(plot_data$gene))
 
 # Color scheme
 volcano_colors <- c(
@@ -306,14 +284,6 @@ volcano_plot <- volcano_plot +
   theme(legend.position = "none")
 
 
-print(volcano_plot)
-
-combined_plot <- pca_plot + volcano_plot 
-combined_plot <- pca_plot / volcano_plot
-
-print(combined_plot)
-
-ggsave(file.path(OUTPUT_DIR, "Figure1C_Volcano.pdf"), volcano_plot, width = 8, height = 6)
 
 # ----------------------------------------------------------------------------
 # 9. Figure 1D: K-means Clustering Heatmap
@@ -325,7 +295,6 @@ sig_genes <- deseq2.res %>%
   filter(!is.na(padj), padj < 0.05, abs(log2FoldChange) >= 1) %>%
   pull(gene)
 
-cat("\nSignificant DEGs:", length(sig_genes), "\n")
 
 # Subset and scale expression matrix
 mat_deg <- combat_mat[intersect(rownames(combat_mat), sig_genes), , drop = FALSE]
@@ -409,8 +378,6 @@ pheatmap(
 )
 dev.off()
 
-# Save cluster assignments
-write.xlsx(cluster_tbl, file.path(OUTPUT_DIR, "kmeans_clusters.xlsx"), rowNames = FALSE)
 
 # ----------------------------------------------------------------------------
 # 10. Figure 1E: GO Over-Representation Analysis (ORA)
@@ -481,22 +448,3 @@ ora_plot <- dotplot(
     panel.grid.major = element_line(color = "grey90", linetype = "dashed")
   ) +
   scale_color_gradient(low = "red", high = "blue", trans = "log10", guide = guide_colorbar(reverse = TRUE))
-
-print(ora_plot)
-ggsave(file.path(OUTPUT_DIR, "Figure1E_ORA_dotplot.pdf"), ora_plot, width = 10, height = 8)
-
-# ----------------------------------------------------------------------------
-# 11. Save Session Info and Key Objects
-# ----------------------------------------------------------------------------
-# Save key objects for downstream analysis
-saveRDS(res_df, file.path(OUTPUT_DIR, "DESeq2_results.rds"))
-saveRDS(cluster_tbl, file.path(OUTPUT_DIR, "kmeans_cluster_table.rds"))
-saveRDS(combat_mat, file.path(OUTPUT_DIR, "combat_corrected_matrix.rds"))
-
-# Session info
-writeLines(capture.output(sessionInfo()), file.path(OUTPUT_DIR, "session_info.txt"))
-
-cat("\n============================================\n")
-cat("Figure 1 analysis completed!\n")
-cat("Output files saved to:", OUTPUT_DIR, "\n")
-cat("============================================\n")
