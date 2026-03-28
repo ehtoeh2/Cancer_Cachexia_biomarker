@@ -1,5 +1,5 @@
 # ============================================================================
-# Figure 5B Supplementary: IntNMF Euclidean-Based Silhouette + DOCX Report
+# Figure 5B Supplementary: IntNMF Euclidean-Based Silhouette
 # ============================================================================
 # Distance metric : Euclidean distance on the HVG VST matrix (dat_rna)
 # Clustering      : IntNMF fit$clusters (K = 2)
@@ -12,13 +12,12 @@
 
 suppressPackageStartupMessages({
   library(cluster)   # silhouette()
-  library(officer)   # DOCX generation
   library(dplyr)
   library(tidyr)
 })
 
 # Output directory (save DOCX alongside the R scripts)
-SCRIPT_DIR <- "/Users/daehwankim/Desktop/KIST_folder/2025/Progress/Cachexia model/Serpina3_Paper/Nature communications/Rscripts_natcom"
+SCRIPT_DIR <- ""
 
 # ----------------------------------------------------------------------------
 # 1. Euclidean Distance  +  Silhouette
@@ -46,14 +45,4 @@ c1_col  <- breakdown_wide$Colorectal[breakdown_wide$Cluster  == "C1"]
 c2_pan  <- breakdown_wide$Pancreas[breakdown_wide$Cluster    == "C2"]
 c2_col  <- breakdown_wide$Colorectal[breakdown_wide$Cluster  == "C2"]
 
-# Print to console
-cat("\n--- Silhouette Results (Euclidean) ---\n")
-cat("print(mean_cpi_100):\n"); print(rowMeans(cpi_100))
-cat("print(mean_cpi_300):\n"); print(rowMeans(cpi_300))
-cat("\n")
-print(sil_euc)
-cat("\nIndividual silhouette widths:\n")
-print(indiv_stats)
-cat(sprintf("------------------------------------------------\nMean silhouette width =  %.7f\n", mean_sil))
-cat("\nCluster × Cancer Type:\n"); print(breakdown_wide)
 
