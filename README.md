@@ -107,4 +107,4 @@ Each script is self-contained and can be executed independently. Before running:
 
 ## Citation
 
-> Kim, D.-H., Ko, J., et al. *Diagnostic Platform for Cancer Cachexia: Multi-Omics Based Novel Biomarker Discovery.* (under review).
+> Kim, DH., Ko, JB., et al. *Diagnostic Platform for Cancer Cachexia: Multi-Omics Based Novel Biomarker Discovery.* (under review).
