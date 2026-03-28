@@ -46,8 +46,8 @@ set.seed(1234)
 # Input:  Weighted Stouffer meta-analysis result table (xlsx)
 # Output: PDF and PNG figures saved to OUTPUT_DIR
 
-INPUT_FILE <- "/Users/daehwankim/Desktop/KIST_folder/Progress/Cachexia model/Serpina3_Paper/260119/Weighted_Stouffer_Meta_Analysis.xlsx"
-OUTPUT_DIR <- "/Users/daehwankim/Desktop/KIST_folder/Progress/Cachexia model/Serpina3_Paper/260119"
+INPUT_FILE <- ""
+OUTPUT_DIR <- ""
 
 # Create output directory if needed
 if (!dir.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR, recursive = TRUE)
@@ -58,14 +58,7 @@ out <- function(filename) file.path(OUTPUT_DIR, filename)
 # ----------------------------------------------------------------------------
 # 2. Load Data
 # ----------------------------------------------------------------------------
-cat("Loading dataset...\n")
 df <- read_excel(INPUT_FILE)
-
-# Candidate secretome genes to highlight across all plots
-candidate_genes <- c(
-  "Serpina3m", "Col19a1", "Serpina3n", "C4b", "Lox",
-  "Gpx3", "Fibin", "Igfbp3", "Tnfrsf12a", "Ctsl", "Vegfd"
-)
 
 # Model labels and sample-size-based weights (for Stouffer LOO)
 # Weights are proportional to sample sizes: C26 (n=10, PXD027490), KIC (n=6, PXD036752), LLC (n=7, PXD016474)
@@ -75,7 +68,6 @@ weights_map <- c(C26 = 10, KIC = 6, LLC = 7) # adjust to actual n per model
 # ----------------------------------------------------------------------------
 # 3. Figure 3A: Meta-Analysis Volcano Plot (full y-axis)
 # ----------------------------------------------------------------------------
-cat("Generating Figure 3A — Meta-Analysis Volcano Plot...\n")
 
 df_vol <- df %>%
   select(Gene, meta_log2FC, meta_padj) %>%
@@ -93,11 +85,6 @@ label_genes <- df_vol %>%
     tolower(Gene) %in% tolower(candidate_genes),
     Significance == "Significant"
   )
-
-cat("  Labeled candidate genes:", nrow(label_genes), "\n")
-if (nrow(label_genes) > 0) {
-  cat("  ", paste(label_genes$Gene, collapse = ", "), "\n")
-}
 
 fig3A <- ggplot(
   df_vol,
@@ -138,16 +125,9 @@ fig3A <- ggplot(
     axis.title      = element_text(size = 12)
   )
 
-print(fig3A)
-ggsave(out("Figure3A_MetaVolcano.pdf"), fig3A, width = 6, height = 5)
-ggsave(out("Figure3A_MetaVolcano.png"), fig3A, width = 6, height = 5, dpi = 300)
-cat("  -> Saved Figure3A_MetaVolcano.pdf / .png\n")
-
 # ----------------------------------------------------------------------------
 # 4. Figure 3A': Y-axis Capped Volcano Plot
 # ----------------------------------------------------------------------------
-cat("Generating Figure 3A' — Y-axis capped Volcano Plot...\n")
-
 Y_CAP <- 8 # cap -log10(padj) at this value (triangles mark capped points)
 
 df_vol_cap <- df_vol %>%
@@ -211,17 +191,10 @@ fig3A_cap <- ggplot(
     axis.title      = element_text(size = 12)
   )
 
-print(fig3A_cap)
-ggsave(out("Figure3A_MetaVolcano_capped.pdf"), fig3A_cap, width = 6, height = 5)
-ggsave(out("Figure3A_MetaVolcano_capped.png"), fig3A_cap, width = 6, height = 5, dpi = 300)
-cat("  -> Saved Figure3A_MetaVolcano_capped.pdf / .png\n")
-cat("     (▲ = points with -log10(padj) >", Y_CAP, "capped)\n")
 
 # ----------------------------------------------------------------------------
 # 5. Figure 3B: Sensitivity Analysis — Rank Correlation Heatmap
 # ----------------------------------------------------------------------------
-cat("Generating Figure 3B — Sensitivity Analysis...\n")
-
 # -- 5-1. Helper: Fisher's combined probability method
 fisher_meta <- function(pvals, log2fcs) {
   valid <- !is.na(pvals) & !is.na(log2fcs)
@@ -281,7 +254,6 @@ random_effects_meta <- function(log2fcs, pvals) {
 }
 
 # -- 5-3. Compute all three methods for every gene
-cat("  Computing Fisher and Random-effects results for each gene...\n")
 
 method_results <- lapply(seq_len(nrow(df)), function(i) {
   row <- df[i, ]
@@ -309,7 +281,6 @@ method_df$Fisher_padj <- p.adjust(method_df$Fisher_pval, method = "BH")
 method_df$RE_padj <- p.adjust(method_df$RE_pval, method = "BH")
 
 # -- 5-4. Rank correlation heatmap
-cat("  Computing Spearman rank correlation matrix...\n")
 
 method_df_complete <- method_df %>%
   filter(!is.na(Stouffer_pval) & !is.na(Fisher_pval) & !is.na(RE_pval))
@@ -350,22 +321,10 @@ heatmap_args <- list(
   angle_col       = 0
 )
 
-pdf(out("Figure3B_Sensitivity_RankCorrelation.pdf"), width = 5, height = 4.5)
-do.call(pheatmap, heatmap_args)
-dev.off()
-
-png(out("Figure3B_Sensitivity_RankCorrelation.png"),
-  width = 5 * 300, height = 4.5 * 300, res = 300
-)
-do.call(pheatmap, heatmap_args)
-dev.off()
-
-cat("  -> Saved Figure3B_Sensitivity_RankCorrelation.pdf / .png\n")
 
 # ----------------------------------------------------------------------------
 # 6. Figure 3C: Leave-One-Out (LOO) Meta-Analysis Stability
 # ----------------------------------------------------------------------------
-cat("Generating Figure 3C — Leave-One-Out Meta-Analysis...\n")
 
 # -- 6-1. Helper: Weighted Stouffer for a subset of models
 stouffer_loo <- function(log2fcs, pvals, ws) {
@@ -421,7 +380,6 @@ loo_df$LOO_noC26_padj <- p.adjust(loo_df$LOO_noC26_pval, method = "BH")
 loo_df$LOO_noKIC_padj <- p.adjust(loo_df$LOO_noKIC_pval, method = "BH")
 loo_df$LOO_noLLC_padj <- p.adjust(loo_df$LOO_noLLC_pval, method = "BH")
 
-cat("  LOO analysis complete for", nrow(loo_df), "genes.\n")
 
 # -- 6-3. Helper: build one LOO scatter panel
 make_loo_panel <- function(loo_col, exclude_model) {
@@ -462,35 +420,8 @@ make_loo_panel <- function(loo_col, exclude_model) {
     )
 }
 
-# -- 6-4. Combine three panels with patchwork
-p_loo1 <- make_loo_panel("LOO_noC26_log2FC", "C26")
-p_loo2 <- make_loo_panel("LOO_noKIC_log2FC", "KIC")
-p_loo3 <- make_loo_panel("LOO_noLLC_log2FC", "LLC")
 
-fig3C <- p_loo1 + p_loo2 + p_loo3 +
-  plot_annotation(
-    title = "Leave-One-Out Meta-Analysis Stability",
-    subtitle = "Each panel excludes one model. Points on diagonal = no change.",
-    theme = theme(
-      plot.title    = element_text(hjust = 0.5, face = "bold", size = 14),
-      plot.subtitle = element_text(hjust = 0.5, size = 10, color = "grey40")
-    )
-  )
 
-print(fig3C)
-ggsave(out("Figure3C_LOO_Scatter.pdf"), fig3C, width = 14, height = 5)
-ggsave(out("Figure3C_LOO_Scatter.png"), fig3C, width = 14, height = 5, dpi = 300)
-cat("  -> Saved Figure3C_LOO_Scatter.pdf / .png\n")
 
-# ----------------------------------------------------------------------------
-# 7. Save Session Info
-# ----------------------------------------------------------------------------
-writeLines(
-  capture.output(sessionInfo()),
-  out("session_info_Figure3.txt")
-)
 
-cat("\n============================================\n")
-cat("Figure 3 analysis completed!\n")
-cat("Output files saved to:", OUTPUT_DIR, "\n")
-cat("============================================\n")
+
