@@ -56,7 +56,7 @@ set.seed(1234)
 #   - meta_data.xlsx  : Sample metadata (Sheet2: srr_id, sample_name, group)
 #   - Kallisto results: <results_dir>/<srr_id>_abundance.tsv per sample
 
-BASE_DIR    <- "/Users/daehwankim/Library/CloudStorage/GoogleDrive-ehtoeh2@gmail.com/My Drive/Cancer_cachexia"
+BASE_DIR    <- ""
 RESULTS_DIR <- file.path(BASE_DIR, "Kallisto_Results")
 META_FILE   <- file.path(BASE_DIR, "GSE254877", "meta_data.xlsx")
 OUTPUT_DIR  <- file.path(BASE_DIR, "output", "kmeans_K2")
@@ -70,17 +70,14 @@ TARGET_GENES <- c("CTSL", "FBXO32", "EDA2R", "SERPINA3")
 # ----------------------------------------------------------------------------
 # 2. Load Metadata
 # ----------------------------------------------------------------------------
-cat("Loading metadata...\n")
 meta <- read_excel(META_FILE, sheet = "Sheet2")
 colnames(meta) <- c("srr_id", "sample_name", "group")
 meta$group <- factor(meta$group, levels = c("Pancreas", "Colorectal"))
-cat("  Samples:", nrow(meta), "\n")
-print(table(meta$group))
+
 
 # ----------------------------------------------------------------------------
 # 3. Build Transcript-to-Gene Mapping via biomaRt
 # ----------------------------------------------------------------------------
-cat("\nBuilding tx2gene mapping via biomaRt...\n")
 
 tx2gene <- tryCatch(
   {
@@ -104,7 +101,6 @@ tx2gene <- tryCatch(
 # ----------------------------------------------------------------------------
 # 4. Import Kallisto Results with tximport
 # ----------------------------------------------------------------------------
-cat("\nImporting Kallisto results...\n")
 
 files <- file.path(RESULTS_DIR, paste0(meta$srr_id, "_abundance.tsv"))
 names(files) <- meta$srr_id
@@ -115,7 +111,6 @@ if (any(missing)) {
   meta  <- meta[!missing, ]
   files <- files[!missing]
 }
-cat("  Importing", length(files), "samples...\n")
 
 txi <- tximport(
   files,
@@ -125,12 +120,10 @@ txi <- tximport(
   ignoreTxVersion     = TRUE,
   countsFromAbundance = "no"
 )
-cat("  Done. Gene count matrix:", nrow(txi$counts), "genes x", ncol(txi$counts), "samples\n")
 
 # ----------------------------------------------------------------------------
 # 5. DESeq2 VST Normalization (design ~ 1, for unsupervised clustering)
 # ----------------------------------------------------------------------------
-cat("\nRunning DESeq2 VST normalization...\n")
 
 dds <- DESeqDataSetFromTximport(txi, colData = meta, design = ~1)
 dds <- dds[rowSums(counts(dds) >= 10) >= 10, ]  # pre-filter low-count genes
@@ -141,7 +134,6 @@ cat("  VST complete:", nrow(vst_mat), "genes x", ncol(vst_mat), "samples\n")
 # ----------------------------------------------------------------------------
 # 6. Figure 5B: IntNMF Clustering (Optimal K Selection + K=2)
 # ----------------------------------------------------------------------------
-cat("\nGenerating Figure 5B — IntNMF Clustering...\n")
 
 # -- 6-1. Select highly variable genes (top 2000)
 rv     <- rowVars(vst_mat)
@@ -167,10 +159,6 @@ cpi_300 <- nmf.opt.k(
   maxiter = 300, st.count = 10, make.plot = TRUE, progress = TRUE
 )
 
-cat("  Mean CPI (100 iter):\n")
-print(rowMeans(cpi_100))
-cat("  Mean CPI (300 iter):\n")
-print(rowMeans(cpi_300))
 
 # -- 6-4. Final clustering (K = 2)
 K_final <- 2
@@ -229,15 +217,10 @@ fig5B <- ggplot(sil_df, aes(x = index, y = sil_width, fill = cluster)) +
     legend.position   = "bottom"
   )
 
-print(fig5B)
-ggsave(file.path(OUTPUT_DIR, "Figure5B_Silhouette.pdf"), fig5B, width = 6, height = 5)
-ggsave(file.path(OUTPUT_DIR, "Figure5B_Silhouette.png"), fig5B, width = 6, height = 5, dpi = 300)
-cat("  -> Saved Figure5B_Silhouette.pdf / .png\n")
 
 # ----------------------------------------------------------------------------
 # 7. Figure 5C: DESeq2 (C2 vs C1) + GO BP ORA Bubble Plot
 # ----------------------------------------------------------------------------
-cat("\nGenerating Figure 5C — DESeq2 + GO BP ORA...\n")
 
 # -- 7-1. DESeq2 (adjusted for cancer type group)
 meta_de          <- as.data.frame(meta)
@@ -257,12 +240,6 @@ res_df <- as.data.frame(res_shr) %>%
   rownames_to_column("gene") %>%
   arrange(padj)
 
-write.csv(
-  res_df,
-  file.path(OUTPUT_DIR, "DESeq2_C2_vs_C1_groupAdj.csv"),
-  row.names = FALSE
-)
-cat("  Saved: DESeq2_C2_vs_C1_groupAdj.csv\n")
 
 # -- 7-2. GO BP ORA (C1_up vs C2_up)
 padj_cut <- 0.05
@@ -344,10 +321,6 @@ fig5C <- ggplot(plot_df, aes(x = direction, y = term)) +
     legend.position = "right"
   )
 
-print(fig5C)
-ggsave(file.path(OUTPUT_DIR, "Figure5C_GOBP_ORA.pdf"), fig5C, width = 6, height = 5)
-ggsave(file.path(OUTPUT_DIR, "Figure5C_GOBP_ORA.png"), fig5C, width = 6, height = 5, dpi = 300)
-cat("  -> Saved Figure5C_GOBP_ORA.pdf / .png\n")
 
 # ----------------------------------------------------------------------------
 # 8. Figure 5D: Correlation Plots (CTSL & SERPINA3 vs EDA2R & FBXO32)
@@ -367,20 +340,6 @@ dds_corr    <- dds_corr[keep, ]
 vsd_corr    <- vst(dds_corr, blind = TRUE)
 vst_corr    <- assay(vsd_corr)
 
-# -- 8-2. Check target genes
-cat("\nChecking target genes presence...\n")
-for (g in TARGET_GENES) {
-  if (g %in% rownames(vst_corr)) {
-    cat("  OK:", g, "\n")
-  } else {
-    hit <- grep(paste0("^", g, "$"), rownames(vst_corr), ignore.case = TRUE)
-    if (length(hit) > 0) {
-      cat("  OK:", g, "found as:", rownames(vst_corr)[hit[1]], "\n")
-    } else {
-      cat("  MISSING:", g, "\n")
-    }
-  }
-}
 
 # -- 8-3. Build expression data frame
 expr_df <- data.frame(
@@ -459,30 +418,6 @@ p_ser_fbxo32    <- make_corr_plot(expr_df, "SERPINA3", "FBXO32",
                                   "SERPINA3 (VST)", "FBXO32 (VST)",
                                   "SERPINA3 vs FBXO32")
 
-# -- 8-7. Save each panel individually
-ggsave(file.path(OUTPUT_DIR, "Figure5D_CTSL_vs_EDA2R.pdf"),    p_ctsl_eda2r,  width = 6, height = 5)
-ggsave(file.path(OUTPUT_DIR, "Figure5D_CTSL_vs_FBXO32.pdf"),   p_ctsl_fbxo32, width = 6, height = 5)
-ggsave(file.path(OUTPUT_DIR, "Figure5D_SERPINA3_vs_EDA2R.pdf"),  p_ser_eda2r,  width = 6, height = 5)
-ggsave(file.path(OUTPUT_DIR, "Figure5D_SERPINA3_vs_FBXO32.pdf"), p_ser_fbxo32, width = 6, height = 5)
 
-# -- 8-8. Combined 2×2 panel
-fig5D <- (p_ctsl_eda2r | p_ctsl_fbxo32) / (p_ser_eda2r | p_ser_fbxo32)
 
-print(fig5D)
-ggsave(file.path(OUTPUT_DIR, "Figure5D_Correlation_2x2.pdf"), fig5D, width = 12, height = 10)
-ggsave(file.path(OUTPUT_DIR, "Figure5D_Correlation_2x2.png"), fig5D, width = 12, height = 10, dpi = 300)
-cat("  -> Saved Figure5D_Correlation_2x2.pdf / .png\n")
-cat("  -> Individual panels also saved (Figure5D_*.pdf)\n")
 
-# ----------------------------------------------------------------------------
-# 9. Save Session Info
-# ----------------------------------------------------------------------------
-writeLines(
-  capture.output(sessionInfo()),
-  file.path(OUTPUT_DIR, "session_info_Figure5.txt")
-)
-
-cat("\n============================================\n")
-cat("Figure 5 analysis completed!\n")
-cat("Output files saved to:", OUTPUT_DIR, "\n")
-cat("============================================\n")
