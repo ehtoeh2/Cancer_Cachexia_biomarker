@@ -24,7 +24,3 @@
 Mouse_protein <- read.xlsx(file.path(DATA_DIR, "Mouse_serum_proteomics.xlsx"))
 
 # See Figure 4B volcano plot
-
-# ----------------------------------------------------------------------------
-# 2. Save Session Info
-# ----------------------------------------------------------------------------
