@@ -1,7 +1,7 @@
 # Diagnostic Platform for Cancer Cachexia: Multi-Omics Based Novel Biomarker Discovery
 
 **Authors:** Dae-Hwan Kim, Jebeom Ko  
-**Journal:** Nature Communications (manuscript in preparation)
+**Journal:** (manuscript in preparation)
 
 ---
 
@@ -107,4 +107,4 @@ Each script is self-contained and can be executed independently. Before running:
 
 ## Citation
 
-> Kim, D.-H., Ko, J., et al. *Diagnostic Platform for Cancer Cachexia: Multi-Omics Based Novel Biomarker Discovery.* **Nature Communications** (under review).
+> Kim, D.-H., Ko, J., et al. *Diagnostic Platform for Cancer Cachexia: Multi-Omics Based Novel Biomarker Discovery.* (under review).
